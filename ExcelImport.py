@@ -65,17 +65,20 @@ def execThisExe():
     if (sourceData != '') and (sourceDbData != ''):
         error = '信息获取成功,开始读取Excel\n'
         t.insert('insert', error, 'info')
-        # 处理excel
-        global dataArray
-        sheet = pd.read_excel(sourceData, keep_default_na=False)
-        dataArray = np.array(sheet)
-        dataArray = dataArray.tolist()
-        info = "共获取" + str(len(dataArray)) + "条数据\n"
-        t.insert("insert", info, "info")
-        info = "开始进行插入数据,请稍等.......\n"
-        t.insert("insert", info, "info")
-        t1 = Thread(target=importForDb)
-        t1.start()
+        try:
+            # 处理excel
+            global dataArray
+            sheet = pd.read_excel(sourceData, keep_default_na=False)
+            dataArray = np.array(sheet)
+            dataArray = dataArray.tolist()
+            info = "共获取" + str(len(dataArray)) + "条数据\n"
+            t.insert("insert", info, "info")
+            info = "开始进行插入数据,请稍等.......\n"
+            t.insert("insert", info, "info")
+            t1 = Thread(target=importForDb)
+            t1.start()
+        except Exception as error:
+            t.insert('insert', "error：" + str(error), 'error')
 
 
 def importForDb():
