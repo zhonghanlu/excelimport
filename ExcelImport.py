@@ -5,7 +5,7 @@
 # 第一版完成功能  version 0.0.1
 import base64
 # -*- coding: UTF-8 -*-
-import json
+import demjson as json
 import numpy as np
 import pandas as pd
 import pymysql as pm
@@ -22,7 +22,8 @@ tk.geometry('950x370')  # 设置窗口大小为900x600 横纵尺寸
 var = tkk.StringVar()
 
 var.set(
-    "{\"url\": \"127.0.0.1\",\"username\": \"root\",\"password\": \"root\",\"database\": \"exceldemo\",\"tablename\":\"test\"}")
+    {"url": "192.168.10.241", "username": "root", "password": "yegoo@123",
+     "database": "zhuanke2.0", "tablename": "psi_sale"})
 
 sourceData = ""
 sourceDbData = ""
@@ -66,7 +67,7 @@ def execThisExe():
         t.insert('insert', error, 'info')
         # 处理excel
         global dataArray
-        sheet = pd.read_excel(sourceData)
+        sheet = pd.read_excel(sourceData, keep_default_na=False)
         dataArray = np.array(sheet)
         dataArray = dataArray.tolist()
         info = "共获取" + str(len(dataArray)) + "条数据\n"
@@ -78,17 +79,32 @@ def execThisExe():
 
 
 def importForDb():
+    dbinfo = json.decode(sourceDbData)
+    db_saas = {
+        "host": dbinfo["url"],
+        "user": dbinfo["username"],
+        "password": dbinfo["password"],
+        "db": dbinfo["database"],
+        "charset": "utf8",
+        "ssl": {'ssl': {}}  # 很屎虽然什么都没填但是必须有这项配置
+    }
+    mysqlDb = pm.connect(**db_saas)
+    # mysqlDb = pm.connect(host=dbinfo["url"], user=dbinfo["username"], password=dbinfo["password"],
+    #                      db=dbinfo["database"], ssl={'ssl': {}})
+    cursor = mysqlDb.cursor()
     try:
-        dbinfo = json.loads(sourceDbData)
-        mysqlDb = pm.connect(host=dbinfo["url"], user=dbinfo["username"], password=dbinfo["password"],
-                             db=dbinfo["database"])
-        cursor = mysqlDb.cursor()
         for data in dataArray:
             value = ''
             for val in data:
-                value += "'" + str(val) + "'" + ","
+                if val == '':
+                    value += 'NULL' + ','
+                elif str(val) == 'NaT':
+                    value += 'NULL' + ','
+                else:
+                    value += "'" + str(val) + "'" + ","
             value = value[0: len(value) - 1]
             sql = "insert into " + dbinfo["tablename"] + " values(" + value + ")"
+            print(sql)
             count = cursor.execute(sql)
             global execCount
             execCount += count
